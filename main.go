@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -29,11 +30,13 @@ func main() {
 
 	MONGODB_URI:=os.Getenv("MONGODB_URI")
 	clientOptions:=options.Client().ApplyURI(MONGODB_URI) // connect to MongoDB
-
 	client,err:= mongo.Connect(context.Background(),clientOptions)
 	if err!=nil{
 		log.Fatal("⚠️ ERR:",err)
 	}
+
+	defer client.Disconnect(context.Background()) // optimization
+
 	err = client.Ping(context.Background(),nil)
 	if err!=nil{
 		log.Fatal("⚠️ ERR:",err)
@@ -43,10 +46,11 @@ func main() {
 	collection = client.Database("golang_db").Collection("todos")
 
 	app:= fiber.New()
+	//CRUD
 	app.Get("/api/todos", GetTodos)
-	app.Post("/api/todos",CreateTodo)
-	app.Patch("/api/todos/:id",UpdateTodo)
-	app.Post("/api/todos/:id",DeleteTodo)
+	// app.Post("/api/todos",CreateTodo)
+	// app.Patch("/api/todos/:id",UpdateTodo)
+	// app.Post("/api/todos/:id",DeleteTodo)
 
 	PORT:= os.Getenv("PORT")
 	if PORT == ""{
@@ -56,3 +60,31 @@ func main() {
 	log.Fatal(app.Listen("0.0.0.0:"+PORT))
 	
 }
+
+// Add fiber for CRUD Ops.
+
+func GetTodos(ctx *fiber.Ctx)error{
+var todos []Todo
+cursor,err:= collection.Find(context.Background(),bson.M{}) // No filters - Fetching all todos/docs
+if err!=nil{
+	return  err
+}
+
+defer cursor.Close(context.Background()) // optimization
+
+// If no error, then..
+for cursor.Next(context.Background()){
+	var todo Todo
+	if err:= cursor.Decode(&todo); err!=nil{
+		return  err
+	}
+	todos = append(todos, todo)
+}
+return ctx.JSON(todos)
+}
+
+// func CreateTodo(ctx *fiber.Ctx)error{}
+
+// func UpdateTodo(ctx *fiber.Ctx)error{}
+
+// func DeleteTodo(ctx *fiber.Ctx)error{}
