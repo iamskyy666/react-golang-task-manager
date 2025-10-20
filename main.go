@@ -9,12 +9,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Todo struct {
-	ID        int    `json:"_id" bson:"_id"`
+	ID        primitive.ObjectID    `json:"_id,omitempty" bson:"_id,omitempty"`
 	Completed bool   `json:"completed"`
 	Body      string `json:"body"`
 }
@@ -48,7 +49,7 @@ func main() {
 	app:= fiber.New()
 	//CRUD
 	app.Get("/api/todos", GetTodos)
-	// app.Post("/api/todos",CreateTodo)
+	app.Post("/api/todos",CreateTodo)
 	// app.Patch("/api/todos/:id",UpdateTodo)
 	// app.Post("/api/todos/:id",DeleteTodo)
 
@@ -83,8 +84,28 @@ for cursor.Next(context.Background()){
 return ctx.JSON(todos)
 }
 
-// func CreateTodo(ctx *fiber.Ctx)error{}
+func CreateTodo(ctx *fiber.Ctx)error{
+	todo:= new(Todo)
+	if err:= ctx.BodyParser(todo); err != nil{
+		return err
+	}
+	// validate
+	if todo.Body==""{
+		return ctx.Status(400).JSON(fiber.Map{"⚠️ERROR":"Todo-body cannot be empty!"})
+	}
+
+	// insert into MongoDB
+	insertedResult, err:=collection.InsertOne(context.Background(),todo)
+	if err!=nil{
+		return err
+	}
+	todo.ID = insertedResult.InsertedID.(primitive.ObjectID)
+	return ctx.Status(201).JSON(todo)
+}
+
 
 // func UpdateTodo(ctx *fiber.Ctx)error{}
 
 // func DeleteTodo(ctx *fiber.Ctx)error{}
+
+// ⏱️ 01:04:36
