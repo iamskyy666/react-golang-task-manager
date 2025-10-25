@@ -24,9 +24,12 @@ var collection *mongo.Collection
 
 func main() {
 	fmt.Println("Hello World")
-	err:= godotenv.Load(".env")
-	if err!=nil{
+	if os.Getenv("ENV") != "production"{
+		// Load the .env file if not in production
+		err:= godotenv.Load(".env")
+		if err!=nil{
 		log.Fatal("⚠️ ERR. loading the .env file:",err)
+		}
 	}
 
 	MONGODB_URI:=os.Getenv("MONGODB_URI")
@@ -47,6 +50,13 @@ func main() {
 	collection = client.Database("golang_db").Collection("todos")
 
 	app:= fiber.New()
+
+	//! CORS - Not in production
+	// app.Use(cors.New(cors.Config{
+	// 	AllowOrigins: "http://localhost:5173",
+	// 	AllowHeaders: "Origin, Content-Type,Accept",
+	// }))
+
 	//! CRUD endpoints
 	app.Get("/api/todos", GetTodos)
 	app.Post("/api/todos",CreateTodo)
@@ -56,6 +66,11 @@ func main() {
 	PORT:= os.Getenv("PORT")
 	if PORT == ""{
 		PORT="5000"
+	}
+
+	// client/server running on the same domain in production.. In order to make client static:
+	if os.Getenv("ENV") == "production"{
+		app.Static("/","./client/dist")
 	}
 
 	log.Fatal(app.Listen("0.0.0.0:"+PORT))
