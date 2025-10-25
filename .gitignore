@@ -7,12 +7,31 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node modules
 node_modules
-# dist
+client/node_modules
+
+# Build outputs
+#dist
+#build
 dist-ssr
 *.local
 
-# Editor directories and files
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE / editor configs
 .vscode/*
 !.vscode/extensions.json
 .idea
