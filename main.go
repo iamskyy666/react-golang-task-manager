@@ -50,7 +50,7 @@ func main() {
 	//CRUD
 	app.Get("/api/todos", GetTodos)
 	app.Post("/api/todos",CreateTodo)
-	// app.Patch("/api/todos/:id",UpdateTodo)
+	app.Patch("/api/todos/:id",UpdateTodo)
 	// app.Post("/api/todos/:id",DeleteTodo)
 
 	PORT:= os.Getenv("PORT")
@@ -64,6 +64,7 @@ func main() {
 
 // Add fiber for CRUD Ops.
 
+//! READ
 func GetTodos(ctx *fiber.Ctx)error{
 var todos []Todo
 cursor,err:= collection.Find(context.Background(),bson.M{}) // No filters - Fetching all todos/docs
@@ -84,6 +85,7 @@ for cursor.Next(context.Background()){
 return ctx.JSON(todos)
 }
 
+//! CREATE
 func CreateTodo(ctx *fiber.Ctx)error{
 	todo:= new(Todo)
 	if err:= ctx.BodyParser(todo); err != nil{
@@ -104,8 +106,26 @@ func CreateTodo(ctx *fiber.Ctx)error{
 }
 
 
-// func UpdateTodo(ctx *fiber.Ctx)error{}
+//! UPDATE
+ func UpdateTodo(ctx *fiber.Ctx)error{
+	id:= ctx.Params("id")
+	// ObjectIDFromHex creates a new ObjectID from a hex string. It returns an error if the hex string is not a valid ObjectID.
+	objId,err:=primitive.ObjectIDFromHex(id)
+	if err!=nil{
+		return ctx.Status(400).JSON(fiber.Map{"⚠️ERROR":"Invalid todo-ID!"})
+	}
+	filter:=bson.M{"_id":objId}
+	update:= bson.M{"$set":bson.M{"completed":true}} // change/update todo status
+	_,err=collection.UpdateOne(context.Background(),filter,update)
+	if err!=nil{
+		return err
+	}
 
+	return ctx.Status(200).JSON(fiber.Map{"success":"true"})
+
+ }	
+
+//! DELETE
 // func DeleteTodo(ctx *fiber.Ctx)error{}
 
 // ⏱️ 01:04:36
