@@ -47,11 +47,11 @@ func main() {
 	collection = client.Database("golang_db").Collection("todos")
 
 	app:= fiber.New()
-	//CRUD
+	//! CRUD endpoints
 	app.Get("/api/todos", GetTodos)
 	app.Post("/api/todos",CreateTodo)
 	app.Patch("/api/todos/:id",UpdateTodo)
-	// app.Post("/api/todos/:id",DeleteTodo)
+	app.Delete("/api/todos/:id",DeleteTodo)
 
 	PORT:= os.Getenv("PORT")
 	if PORT == ""{
@@ -126,6 +126,24 @@ func CreateTodo(ctx *fiber.Ctx)error{
  }	
 
 //! DELETE
-// func DeleteTodo(ctx *fiber.Ctx)error{}
+	func DeleteTodo(ctx *fiber.Ctx)error{
+		id:= ctx.Params("id")
 
-// ⏱️ 01:04:36
+	objId,err:=primitive.ObjectIDFromHex(id)
+	if err!=nil{
+		return ctx.Status(400).JSON(fiber.Map{"⚠️ERROR":"Invalid todo-ID!"})
+	}
+
+	filter:= bson.M{"_id":objId}
+
+	// If no-error, then delete 1 from the collection
+	_,err=collection.DeleteOne(context.Background(),filter)
+	if err!=nil{
+		return err
+	}
+
+	// if no-error while deleting, then, return a success-response
+	return ctx.Status(200).JSON(fiber.Map{"success":"true"})
+}
+
+// ⏱️
